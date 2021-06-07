@@ -133,7 +133,7 @@ def post_csv(json_name, user_id, robot_url):
         data = json.dumps({
             "msgtype": "markdown", 
             "markdown": {
-                "content": "已经{}点了，{}号鼓励师想对您说：[{}]({})".format(hh, user_id, data_info['正文'], weibo_url)
+                "content": "已经{}点了，{}号鼓励师想对您说：[{}]({})".format(hh, user_id, weibo_text, weibo_url)
             }
         })
         send_wx_robot(robot_url, data)
