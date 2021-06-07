@@ -5,7 +5,7 @@ import random
 import csv
 import requests
 
-robot_babala = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=f76655fa-c62c-40a6-9675-a922d874b038'
+robot_babala = 'f76655fa-c62c-40a6-9675-a922d874b038'
 
 # def walk_pic_dir(dir_path):
 #     listdir = os.walk(dir_path)
@@ -90,7 +90,8 @@ def send_wx_robot(robot_url, data):
     headers = {
         'Content-Type': 'application/json',
     }
-    response = requests.post(robot_url, headers=headers, data=data)
+    url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=' + robot_url
+    response = requests.post(url, headers=headers, data=data)
 
 post_index = 1
 def post_csv(json_name, user_id, robot_url):
