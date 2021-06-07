@@ -156,6 +156,7 @@ def main():
     get_csv_file('CSVKookong_', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\Kookong_\\2480712160.csv')
     get_csv_file('CSV藏弓U', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\藏弓U\\5652393418.csv')
     get_csv_file('CSV几度星霜_Jeral', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\几度星霜_Jeral\\2250601564.csv')
+    get_csv_file('CSV摄影写真博主', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\摄影写真博主\\5900744122.csv')
     # get_csv_file('CSV鸡腿子瘦了但她膨胀了', 'C:\\Users\\wangr\\weibo-crawler\\weibo\\鸡腿子瘦了但她膨胀了\\2126877340.csv')
     # get_csv_file('CSV山海观雾', 'C:\\Users\\wangr\\weibo-crawler\\weibo\\山海观雾\\5115987302.csv')
     # get_csv_file('CSV鞠婧祎', 'C:\\Users\\wangr\\weibo-crawler\\weibo\\鞠婧祎\\3669102477.csv')
@@ -173,6 +174,7 @@ def main():
     post_csv('CSVKookong_', '2480712160', robot_babala)
     post_csv('CSV藏弓U', '5652393418', robot_babala)
     post_csv('CSV几度星霜_Jeral', '2250601564', robot_babala)
+    post_csv('CSV摄影写真博主', '5900744122', robot_babala)
     post_csv('CSV北电中戏的美女们', '3283836867', robot_babala)
 
 if __name__ == "__main__":
