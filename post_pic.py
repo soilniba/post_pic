@@ -68,14 +68,20 @@ def get_csv_file(json_name, file_path):
             bid = row['bid']
             if bid in json_table:
                 data_info = json_table[bid]
-                if not 'bid' in data_info:
-                    data_info['bid'] = bid
             else:
                 data_info = {}
-                data_info['bid'] = bid
-                data_info['正文'] = row['正文']
-                data_info['原始图片url'] = row['原始图片url'].split(',')
                 json_table[bid] = data_info
+            data_info['bid'] = bid
+            if '源微博bid' in row and row['源微博bid'] != None:
+                data_info['源微博bid'] = row['源微博bid']
+            if '正文' in row:
+                data_info['正文'] = row['正文']
+            if '源微博正文' in row and row['源微博正文'] != None:
+                data_info['源微博正文'] = row['源微博正文']
+            if '原始图片url' in row:
+                data_info['原始图片url'] = row['原始图片url'].split(',')
+            if '源微博原始图片url' in row and row['源微博原始图片url'] != None:
+                data_info['源微博原始图片url'] = row['源微博原始图片url'].split(',')
         print('[{}]CSV获取完毕'.format(json_name))
         write_json(file_name, json_table)
         return json_table
@@ -93,20 +99,27 @@ def post_csv(json_name, user_id, robot_url):
     random_bid = random.choice(list(json_table))
     data_info = json_table[random_bid]
     pic_table = data_info['原始图片url']
+    weibo_text = data_info['正文']
+    if '源微博原始图片url' in data_info and data_info['源微博原始图片url'] != None:
+        pic_table = data_info['源微博原始图片url']
+    if '源微博正文' in data_info and data_info['源微博正文'] != None:
+        weibo_text = data_info['源微博正文']
+    if '源微博bid' in data_info and data_info['源微博bid'] != None:
+        random_bid = data_info['源微博bid']
     if len(pic_table) > 2:
         random_pic_url = random.choice(list(pic_table))
         weibo_url = 'https://weibo.com/{}/{}'.format(user_id, random_bid)
         data_info['post_time'] = time.time()
         file_name = '{}.json'.format(json_name)
         write_json(file_name, json_table)
-        print(random_bid, data_info['正文'], random_pic_url, weibo_url)
+        print(random_bid, weibo_text, random_pic_url, weibo_url)
         # 图文
         data = json.dumps({
             "msgtype": "news", 
             "news": {
                 "articles": [
                     {
-                        "title" : data_info['正文'],
+                        "title" : weibo_text,
                         "description" : '点击查看大图',
                         "url" : random_pic_url,
                         "picurl" : random_pic_url
