@@ -58,6 +58,35 @@ def post_pic(json_table):
     data_info = json_table[pic_path]
     print(pic_path, data_info['pic_path'])
 
+ad_key_list = {
+    '三星',
+    '华为',
+    '测评',
+    # '生徒会长',
+    # '甲斐之虎',
+    '潮流玩具',
+    '潮玩娱乐',
+    '公司宗旨',
+    '品牌',
+    'vivo',
+    '小米',
+    '全网预定',
+    '敬请期待',
+    '上新',
+    '售价',
+    '预定',
+    '商品',
+    '贩售',
+    '低价',
+    '免单',
+}
+
+def has_ad_key(text):
+    for ad in ad_key_list:
+        if ad in text:
+            return True
+    return False
+
 def get_csv_file(json_name, file_path):
     with open(file_path, encoding='utf-8')as f:
         f_csv = csv.DictReader(f)
@@ -72,12 +101,22 @@ def get_csv_file(json_name, file_path):
                 data_info = {}
                 json_table[bid] = data_info
             data_info['bid'] = bid
+            if '源用户id' in row and row['源用户id'] != None:
+                data_info['源用户id'] = row['源用户id']
             if '源微博bid' in row and row['源微博bid'] != None:
                 data_info['源微博bid'] = row['源微博bid']
             if '正文' in row:
                 data_info['正文'] = row['正文']
+                # if not has_ad_key(row['正文']) and len(row['原始图片url'].split(',')) > 1 and len(data_info['正文']) > 250 and len(data_info['正文']) < 3000:
+                #     print('', len(data_info['正文']), data_info['正文'])
+                #     weibo_url = 'https://weibo.com/{}/{}'.format('1876856920', bid)
+                #     print(weibo_url)
             if '源微博正文' in row and row['源微博正文'] != None:
                 data_info['源微博正文'] = row['源微博正文']
+                # if not has_ad_key(row['源微博正文']) and len(row['源微博原始图片url'].split(',')) > 1 and len(data_info['源微博正文']) > 250 and len(data_info['源微博正文']) < 3000:
+                #     print('', len(data_info['源微博正文']), data_info['源微博正文'])
+                #     weibo_url = 'https://weibo.com/{}/{}'.format(row['源用户id'], row['源微博bid'])
+                #     print(weibo_url)
             if '原始图片url' in row:
                 data_info['原始图片url'] = row['原始图片url'].split(',')
             if '源微博原始图片url' in row and row['源微博原始图片url'] != None:
@@ -107,41 +146,46 @@ def post_csv(json_name, user_id, robot_url):
         weibo_text = data_info['源微博正文']
     if '源微博bid' in data_info and data_info['源微博bid'] != None:
         random_bid = data_info['源微博bid']
-    if len(pic_table) > 2:
-        random_pic_url = random.choice(list(pic_table))
-        weibo_url = 'https://weibo.com/{}/{}'.format(user_id, random_bid)
-        data_info['post_time'] = time.time()
-        file_name = '{}.json'.format(json_name)
-        write_json(file_name, json_table)
-        print(random_bid, weibo_text, random_pic_url, weibo_url)
-        # 图文
-        data = json.dumps({
-            "msgtype": "news", 
-            "news": {
-                "articles": [
-                    {
-                        "title" : weibo_text,
-                        "description" : '点击查看大图',
-                        "url" : random_pic_url,
-                        "picurl" : random_pic_url
-                    }
-                ]
-            },
-        })
-        send_wx_robot(robot_url, data)
-        # 微博链接
-        hh = time.strftime("%H", time.localtime(time.time()))
-        data = json.dumps({
-            "msgtype": "markdown", 
-            "markdown": {
-                "content": "已经{}点了，{}号鼓励师想对您说：[{}]({})".format(hh, user_id, weibo_text, weibo_url)
-            }
-        })
-        send_wx_robot(robot_url, data)
-        global post_index
-        post_index += 1
-    else:
-        post_csv(json_name, user_id, robot_url)
+    if '源用户id' in data_info and data_info['源用户id'] != None:
+        user_id = data_info['源用户id']
+    if has_ad_key(weibo_text):
+        return post_csv(json_name, user_id, robot_url)
+    if len(weibo_text) > 250:
+        return post_csv(json_name, user_id, robot_url)
+    if len(pic_table) <= 1:
+        return post_csv(json_name, user_id, robot_url)
+    random_pic_url = random.choice(list(pic_table))
+    weibo_url = 'https://weibo.com/{}/{}'.format(user_id, random_bid)
+    data_info['post_time'] = time.time()
+    file_name = '{}.json'.format(json_name)
+    write_json(file_name, json_table)
+    print(random_bid, weibo_text, random_pic_url, weibo_url)
+    # 图文
+    data = json.dumps({
+        "msgtype": "news", 
+        "news": {
+            "articles": [
+                {
+                    "title" : weibo_text,
+                    "description" : '点击查看大图',
+                    "url" : random_pic_url,
+                    "picurl" : random_pic_url
+                }
+            ]
+        },
+    })
+    send_wx_robot(robot_url, data)
+    # 微博链接
+    hh = time.strftime("%H", time.localtime(time.time()))
+    data = json.dumps({
+        "msgtype": "markdown", 
+        "markdown": {
+            "content": "已经{}点了，{}号鼓励师想对您说：\n[{}]({})".format(hh, user_id, weibo_text, weibo_url)
+        }
+    })
+    send_wx_robot(robot_url, data)
+    global post_index
+    post_index += 1
 
 def post_test(json_name, user_id, robot_url):
     file_name = '{}.json'.format(json_name)
@@ -166,11 +210,12 @@ def main():
 
     # get_csv_file('CSV街拍疯狂', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\街拍疯狂\\6336987096.csv')
     # get_csv_file('CSV借图', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\借图\\5102556735.csv')
-    get_csv_file('CSV北电中戏的美女们', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\北电中戏的美女们\\3283836867.csv')
-    get_csv_file('CSVKookong_', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\Kookong_\\2480712160.csv')
-    get_csv_file('CSV藏弓U', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\藏弓U\\5652393418.csv')
-    get_csv_file('CSV几度星霜_Jeral', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\几度星霜_Jeral\\2250601564.csv')
-    get_csv_file('CSV摄影写真博主', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\摄影写真博主\\5900744122.csv')
+    # get_csv_file('CSV北电中戏的美女们', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\北电中戏的美女们\\3283836867.csv')
+    # get_csv_file('CSVKookong_', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\Kookong_\\2480712160.csv')
+    # get_csv_file('CSV藏弓U', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\藏弓U\\5652393418.csv')
+    # get_csv_file('CSV几度星霜_Jeral', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\几度星霜_Jeral\\2250601564.csv')
+    # get_csv_file('CSV摄影写真博主', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\摄影写真博主\\5900744122.csv')
+    get_csv_file('CSV蛋壳-安利协会', 'C:\\Users\\wangr\\weibo-crawler_retweet\\weibo\\蛋壳-安利协会\\1876856920.csv')
     # get_csv_file('CSV鸡腿子瘦了但她膨胀了', 'C:\\Users\\wangr\\weibo-crawler\\weibo\\鸡腿子瘦了但她膨胀了\\2126877340.csv')
     # get_csv_file('CSV山海观雾', 'C:\\Users\\wangr\\weibo-crawler\\weibo\\山海观雾\\5115987302.csv')
     # get_csv_file('CSV鞠婧祎', 'C:\\Users\\wangr\\weibo-crawler\\weibo\\鞠婧祎\\3669102477.csv')
@@ -185,11 +230,16 @@ def main():
     # post_csv('CSV山海观雾', '5115987302', robot_babala)
 
     
-    post_csv('CSVKookong_', '2480712160', robot_babala)
-    post_csv('CSV藏弓U', '5652393418', robot_babala)
-    post_csv('CSV几度星霜_Jeral', '2250601564', robot_babala)
-    post_csv('CSV摄影写真博主', '5900744122', robot_babala)
-    post_csv('CSV北电中戏的美女们', '3283836867', robot_babala)
+    # post_csv('CSVKookong_', '2480712160', robot_babala)
+    # post_csv('CSV藏弓U', '5652393418', robot_babala)
+    # post_csv('CSV几度星霜_Jeral', '2250601564', robot_babala)
+    # post_csv('CSV北电中戏的美女们', '3283836867', robot_babala)
+    # post_csv('CSV摄影写真博主', '5900744122', robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
 
 if __name__ == "__main__":
     main()
