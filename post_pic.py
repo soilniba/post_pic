@@ -82,6 +82,10 @@ ad_key_list = {
     '安利模玩手办',
 }
 
+ban_user_id_list = {
+    3355469752,
+}
+
 def has_ad_key(text):
     for ad in ad_key_list:
         if ad in text:
@@ -150,6 +154,8 @@ def post_csv(json_name, user_id, robot_url):
     if '源用户id' in data_info and data_info['源用户id'] != None:
         user_id = data_info['源用户id']
     if has_ad_key(weibo_text):
+        return post_csv(json_name, user_id, robot_url)
+    if user_id in ban_user_id_list:
         return post_csv(json_name, user_id, robot_url)
     if len(weibo_text) > 250:
         return post_csv(json_name, user_id, robot_url)
