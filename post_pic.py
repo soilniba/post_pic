@@ -162,6 +162,8 @@ def post_csv(json_name, user_id, robot_url):
         return post_csv(json_name, user_id, robot_url)
     if len(pic_table) <= 1:
         return post_csv(json_name, user_id, robot_url)
+    if 'post_time' in data_info:
+        return post_csv(json_name, user_id, robot_url)
     random_pic_url = random.choice(list(pic_table))
     weibo_url = 'https://weibo.com/{}/{}'.format(user_id, random_bid)
     data_info['post_time'] = time.time()
