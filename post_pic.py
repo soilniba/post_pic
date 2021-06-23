@@ -77,7 +77,7 @@ ad_key_list = {
     '贩售',
     '低价',
     '免单',
-    'Q版',
+    # 'Q版',
     '盲盒',
     '玩具',
     '安利模玩手办',
@@ -162,7 +162,7 @@ def post_csv(json_name, user_id, robot_url):
         return post_csv(json_name, user_id, robot_url)
     if len(pic_table) <= 1:
         return post_csv(json_name, user_id, robot_url)
-    if 'post_time' in data_info:
+    if 'post_time' in data_info and (data_info['post_time'] - time.time()) < 4 * 7 * 24 * 60 * 60:  # 上次发布时间小于一个月
         return post_csv(json_name, user_id, robot_url)
     random_pic_url = random.choice(list(pic_table))
     weibo_url = 'https://weibo.com/{}/{}'.format(user_id, random_bid)
@@ -187,10 +187,11 @@ def post_csv(json_name, user_id, robot_url):
     send_wx_robot(robot_url, data)
     # 微博链接
     hh = time.strftime("%H", time.localtime(time.time()))
+    cut_text = weibo_text[0:25]
     data = json.dumps({
         "msgtype": "markdown", 
         "markdown": {
-            "content": "已经{}点了，{}号鼓励师想对您说：\n[{}]({})".format(hh, user_id, weibo_text, weibo_url)
+            "content": "已经{}点了，{}号鼓励师想对您说：\n[{}]({})".format(hh, user_id, cut_text, weibo_url)
         }
     })
     send_wx_robot(robot_url, data)
