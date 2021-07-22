@@ -162,8 +162,8 @@ def post_csv(json_name, user_id, robot_url):
         return post_csv(json_name, user_id, robot_url)
     if len(pic_table) <= 1:
         return post_csv(json_name, user_id, robot_url)
-    if 'post_time' in data_info and (data_info['post_time'] - time.time()) < 4 * 7 * 24 * 60 * 60:  # 上次发布时间小于一个月
-        return post_csv(json_name, user_id, robot_url)
+    # if 'post_time' in data_info and (data_info['post_time'] - time.time()) < 4 * 7 * 24 * 60 * 60:  # 上次发布时间小于一个月
+    #     return post_csv(json_name, user_id, robot_url)
     random_pic_url = random.choice(list(pic_table))
     weibo_url = 'https://weibo.com/{}/{}'.format(user_id, random_bid)
     data_info['post_time'] = time.time()
@@ -188,10 +188,18 @@ def post_csv(json_name, user_id, robot_url):
     # 微博链接
     hh = time.strftime("%H", time.localtime(time.time()))
     cut_text = weibo_text[0:25]
+    content_text = "已经{}点了，{}号鼓励师想对您说：\n[{}]({})".format(hh, user_id, cut_text, weibo_url)
+    pic_index = 1
+    for pic_url in pic_table:
+        pic_text = pic_index
+        if pic_url == random_pic_url:
+            pic_text = '**{}**'.format(pic_text)
+        content_text += ' \[[{}]({})\]'.format(pic_text, pic_url)
+        pic_index += 1
     data = json.dumps({
         "msgtype": "markdown", 
         "markdown": {
-            "content": "已经{}点了，{}号鼓励师想对您说：\n[{}]({})".format(hh, user_id, cut_text, weibo_url)
+            "content": content_text
         }
     })
     send_wx_robot(robot_url, data)
