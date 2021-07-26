@@ -188,7 +188,7 @@ def post_csv(json_name, user_id, robot_url):
     # 微博链接
     hh = time.strftime("%H", time.localtime(time.time()))
     cut_text = weibo_text[0:25]
-    content_text = "已经{}点了，{}号鼓励师想对您说：\n[{}]({})".format(hh, user_id, cut_text, weibo_url)
+    content_text = "已经{}点了，{}号鼓励师想对您说：\n[{}...]({})".format(hh, user_id, cut_text, weibo_url)
     pic_index = 1
     for pic_url in pic_table:
         pic_text = pic_index
