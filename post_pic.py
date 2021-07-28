@@ -193,8 +193,9 @@ def post_csv(json_name, user_id, robot_url):
     for pic_url in pic_table:
         pic_text = pic_index
         if pic_url == random_pic_url:
-            pic_text = '**{}**'.format(pic_text)
-        content_text += ' \[[{}]({})\]'.format(pic_text, pic_url)
+            content_text += ' \[**{}**\]'.format(pic_text)
+        else:
+            content_text += ' \[[{}]({})\]'.format(pic_text, pic_url)
         pic_index += 1
     data = json.dumps({
         "msgtype": "markdown", 
