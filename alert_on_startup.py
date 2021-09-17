@@ -7,11 +7,11 @@ feishu_robot_private = '1d3780d7-07b2-4e03-9d55-1fd0e73478c2'
 def send_alert(wx_robot_key=False, feishu_robot_key=False):
     markdown_msg = ''
     feishu_msg = {"content": []}
-    feishu_msg["title"] = '🚨电脑重启啦！！'
+    feishu_msg["title"] = '🚨{}'.format(socket.gethostname())
     feishu_msg["content"].append([
         {
             "tag": "text",
-            "text": '🖥🔌主机名：{}'.format(socket.gethostname())
+            "text": '🖥🔌电脑重启啦！！'
         },
     ])
     feishu_msg["content"].append([
