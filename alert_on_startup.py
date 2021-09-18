@@ -1,10 +1,12 @@
 import json
 import requests
 import socket
+from subprocess import run, PIPE
+from time import sleep
 
 feishu_robot_private = '1d3780d7-07b2-4e03-9d55-1fd0e73478c2'
 
-def send_alert(wx_robot_key=False, feishu_robot_key=False):
+def send_alert(feishu_robot_key):
     markdown_msg = ''
     feishu_msg = {"content": []}
     feishu_msg["title"] = '🚨{}'.format(socket.gethostname())
@@ -19,24 +21,8 @@ def send_alert(wx_robot_key=False, feishu_robot_key=False):
             "tag": "at",
             "user_id": "all",
 		},
-        # 
-        
     ])
-
-    if wx_robot_key != False:
-        send_wx_robot(wx_robot_key, markdown_msg)
-    if feishu_robot_key != False:
-        send_feishu_robot(feishu_robot_key, feishu_msg)
-
-def send_wx_robot(robot_url, markdown_msg):
-    headers = {
-        'Content-Type': 'application/json',
-    }
-    data = json.dumps({
-        "msgtype": "markdown", 
-        "markdown": { "content": markdown_msg },
-    })
-    response = requests.post('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=' + robot_url, headers=headers, data=data)
+    send_feishu_robot(feishu_robot_key, feishu_msg)
 
 def send_feishu_robot(feishu_robot_key, feishu_msg):
     headers = {
@@ -51,7 +37,22 @@ def send_feishu_robot(feishu_robot_key, feishu_msg):
         }
     })
     response = requests.post('https://open.feishu.cn/open-apis/bot/v2/hook/' + feishu_robot_key, headers=headers, data=data)
-
+    print('飞书消息已发送')
 
 if __name__ == "__main__":
-    send_alert(False, feishu_robot_private)
+    # 先检查能否联网
+    for i in range(1, 5 * 60 + 1):
+        # 尝试5分钟
+        domain = 'open.feishu.cn'
+        r = run('ping {}'.format(domain),
+                stdout=PIPE,
+                stderr=PIPE,
+                stdin=PIPE,
+                shell=True)
+        if r.returncode:
+            print('第{}次尝试，{}连接失败'.format(i, domain))
+        else:
+            print('{}连接正常'.format(domain))
+            send_alert(feishu_robot_private)
+            break
+        sleep(1)
