@@ -4,8 +4,37 @@ import time
 import random
 import csv
 import requests
+import urllib.request
+from time import sleep
 
-robot_babala = 'f76655fa-c62c-40a6-9675-a922d874b038'
+wx_robot_babala = 'f76655fa-c62c-40a6-9675-a922d874b038'
+feishu_robot_test = '34006ae3-b50a-48a6-9871-eb2a1b43223c'
+feishu_robot_babala = 'd992f480-4203-4a37-a00c-e9a1532869c9'
+feishu_app_id = "cli_a1c3790e21f8100c"
+feishu_app_secret = "YVXgZL2HnYi6gHm2NmxenfOTi60rfrQ3"
+
+def B2Q(uchar):
+    """单个字符 半角转全角"""
+    inside_code = ord(uchar)
+    if inside_code < 0x0020 or inside_code > 0x7e: # 不是半角字符就返回原来的字符
+        return uchar 
+    if inside_code == 0x0020: # 除了空格其他的全角半角的公式为: 半角 = 全角 - 0xfee0
+        inside_code = 0x3000
+    else:
+        inside_code += 0xfee0
+    return chr(inside_code)
+
+def stringQ2B(ustring):
+    """把字符串全角转半角"""
+    return "".join([B2Q(uchar) for uchar in str(ustring)])
+
+tHourEmojiList = { 1: '🕐', 2: '🕑', 3: '🕒', 4: '🕓', 5: '🕔', 6: '🕕', 7: '🕖', 8: '🕗', 9: '🕘', 10: '🕙', 11: '🕚', 12: '🕛', }
+def GetHourEmoji(hh):
+    hh = int(hh)
+    if hh > 12:
+        hh = hh - 12
+    return tHourEmojiList[hh]
+
 
 # def walk_pic_dir(dir_path):
 #     listdir = os.walk(dir_path)
@@ -136,7 +165,61 @@ def send_wx_robot(robot_url, data):
         'Content-Type': 'application/json',
     }
     url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=' + robot_url
-    response = requests.post(url, headers=headers, data=data)
+    # response = requests.post(url, headers=headers, data=data)
+
+def get_token(app_id = feishu_app_id, app_secret = feishu_app_secret):
+    """获取应用token，需要用app_id和app_secret，主要是上传图片需要用到token"""
+    url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal/"
+    headers = {"Content-Type": "application/json; charset=utf-8"}
+    Body = {
+        "app_id":app_id,
+        "app_secret":app_secret
+    }
+    r = requests.post(url, headers=headers, json=Body)
+    return json.loads(r.text)['tenant_access_token']
+
+def upload_feishu_image(image_url, err_num = 0):
+    # 上传图片
+    image = urllib.request.urlopen(image_url)#.read()
+    resp = requests.post(
+        url='https://open.feishu.cn/open-apis/image/v4/put/',
+        headers={
+            'Authorization': "Bearer " + get_token(),
+        },
+        files={
+            "image": image
+        },
+        data={
+            "image_type": "message"
+        },
+        stream=True)
+    resp.raise_for_status()
+    content = resp.json()
+    if content.get("code") == 0:
+        return content['data']['image_key']
+    else:
+        print(Exception("Call Api Error, errorCode is %s" % content["code"]))
+        err_num += 1
+        if err_num <= 10:
+            sleep(1)
+            return upload_feishu_image(image_url, err_num)
+        else:
+            return False
+
+def send_feishu_robot(feishu_robot_key, feishu_msg):
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    data = json.dumps({
+        "msg_type": "post",
+        "content": {
+            "post": {
+                "zh_cn": feishu_msg
+            }
+        }
+    })
+    response = requests.post('https://open.feishu.cn/open-apis/bot/v2/hook/' + feishu_robot_key, headers=headers, data=data)
+    print('飞书消息已发送')
 
 post_index = 1
 def post_csv(json_name, user_id, robot_url):
@@ -185,17 +268,47 @@ def post_csv(json_name, user_id, robot_url):
         },
     })
     send_wx_robot(robot_url, data)
+
     # 微博链接
     hh = time.strftime("%H", time.localtime(time.time()))
     cut_text = weibo_text[0:25]
     content_text = "已经{}点了，{}号鼓励师想对您说：\n[{}...]({})".format(hh, user_id, cut_text, weibo_url)
+    feishu_msg = {"content": []}
+    feishu_msg["title"] = "{}{}点了，来杯特仑苏吧：".format(GetHourEmoji(hh), hh, user_id)
+    feishu_msg_links = []
+    feishu_upload_image_url = random_pic_url
+    if feishu_upload_image_url.find('large') != -1:
+        # 上传图片替换成缩略图地址
+        feishu_upload_image_url = feishu_upload_image_url.replace('/large/', '/mw690/')
+    feishu_image_key = upload_feishu_image(random_pic_url)
+    feishu_msg["content"].append([
+        {
+            "tag": "img",
+            "image_key": feishu_image_key,
+        }
+    ])
+    feishu_msg["content"].append(feishu_msg_links)
+    feishu_msg_links.append(
+        {
+            "tag": "a",
+            "text": cut_text,
+            "href": weibo_url,
+        },
+    )
+
     pic_index = 1
     for pic_url in pic_table:
         pic_text = pic_index
         if pic_url == random_pic_url:
             content_text += ' \[**{}**\]'.format(pic_text)
+            pic_text = stringQ2B(pic_text)
         else:
             content_text += ' \[[{}]({})\]'.format(pic_text, pic_url)
+        feishu_msg_links.append({
+            "tag": "a",
+            "text": ' [{}]'.format(pic_text),
+            "href": pic_url,
+        })
         pic_index += 1
     data = json.dumps({
         "msgtype": "markdown", 
@@ -204,6 +317,10 @@ def post_csv(json_name, user_id, robot_url):
         }
     })
     send_wx_robot(robot_url, data)
+
+    # 发送到飞书机器人
+    if feishu_image_key != False:
+        send_feishu_robot(feishu_robot_babala, feishu_msg)
     global post_index
     post_index += 1
 
@@ -242,24 +359,24 @@ def main():
     # get_csv_file('CSV小甜甜甜T', 'C:\\Users\\wangr\\weibo-crawler\\weibo\\小甜甜甜T\\5161703950.csv')
 
 
-    # post_csv('CSV鸡腿子瘦了但她膨胀了', '2126877340', robot_babala)
-    # post_csv('CSV借图', '5102556735', robot_babala)
-    # post_csv('CSV街拍疯狂', '6336987096', robot_babala)
-    # post_csv('CSV小甜甜甜T', '5161703950', robot_babala)
-    # post_csv('CSV鞠婧祎', '5161703950', robot_babala)
-    # post_csv('CSV山海观雾', '5115987302', robot_babala)
+    # post_csv('CSV鸡腿子瘦了但她膨胀了', '2126877340', wx_robot_babala)
+    # post_csv('CSV借图', '5102556735', wx_robot_babala)
+    # post_csv('CSV街拍疯狂', '6336987096', wx_robot_babala)
+    # post_csv('CSV小甜甜甜T', '5161703950', wx_robot_babala)
+    # post_csv('CSV鞠婧祎', '5161703950', wx_robot_babala)
+    # post_csv('CSV山海观雾', '5115987302', wx_robot_babala)
 
     
-    # post_csv('CSVKookong_', '2480712160', robot_babala)
-    # post_csv('CSV藏弓U', '5652393418', robot_babala)
-    # post_csv('CSV几度星霜_Jeral', '2250601564', robot_babala)
-    # post_csv('CSV北电中戏的美女们', '3283836867', robot_babala)
-    # post_csv('CSV摄影写真博主', '5900744122', robot_babala)
-    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
-    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
-    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
-    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
-    post_csv('CSV蛋壳-安利协会', '1876856920', robot_babala)
+    # post_csv('CSVKookong_', '2480712160', wx_robot_babala)
+    # post_csv('CSV藏弓U', '5652393418', wx_robot_babala)
+    # post_csv('CSV几度星霜_Jeral', '2250601564', wx_robot_babala)
+    # post_csv('CSV北电中戏的美女们', '3283836867', wx_robot_babala)
+    # post_csv('CSV摄影写真博主', '5900744122', wx_robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
+    post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
 
 if __name__ == "__main__":
     main()
