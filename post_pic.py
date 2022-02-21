@@ -10,6 +10,7 @@ from time import sleep
 wx_robot_babala = 'f76655fa-c62c-40a6-9675-a922d874b038'
 feishu_robot_test = '34006ae3-b50a-48a6-9871-eb2a1b43223c'
 feishu_robot_babala = 'd992f480-4203-4a37-a00c-e9a1532869c9'
+feishu_robot_xiaozhushou = 'bba8c0f3-8f75-4eb8-869b-4fdb8112eef6'
 feishu_app_id = "cli_a1c3790e21f8100c"
 feishu_app_secret = "YVXgZL2HnYi6gHm2NmxenfOTi60rfrQ3"
 
@@ -320,7 +321,7 @@ def post_csv(json_name, user_id, robot_url):
 
     # 发送到飞书机器人
     if feishu_image_key != False:
-        send_feishu_robot(feishu_robot_babala, feishu_msg)
+        send_feishu_robot(feishu_robot_xiaozhushou, feishu_msg)
     global post_index
     post_index += 1
 
@@ -372,8 +373,8 @@ def main():
     # post_csv('CSV几度星霜_Jeral', '2250601564', wx_robot_babala)
     # post_csv('CSV北电中戏的美女们', '3283836867', wx_robot_babala)
     # post_csv('CSV摄影写真博主', '5900744122', wx_robot_babala)
-    post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
-    post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
+    # post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
+    # post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
     post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
     post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
     post_csv('CSV蛋壳-安利协会', '1876856920', wx_robot_babala)
