@@ -1,6 +1,13 @@
 import os, re
+import ctypes, sys
 
 remote_gateway = ''
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
 
 def get_sys_route(query_ip):
     sys_route_table = os.popen('route print ' + query_ip)  # 使用os.popen()获取程序输出
@@ -17,11 +24,9 @@ def get_sys_route(query_ip):
         return gateway
     return False
 
-
 def SetRemoteGateIP(ip):
     os.system('route DELETE ' + ip)
     os.system('route ADD {} MASK 255.255.255.255 {}'.format(ip, remote_gateway))
-
 
 # @REM 未验证地址
 # @REM route DELETE 103.255.203.234
@@ -30,6 +35,43 @@ def SetRemoteGateIP(ip):
 # @REM route ADD 180.167.212.114 MASK 255.255.255.255 %REMOTE_GATE%
 # @REM route DELETE 180.167.212.121
 # @REM route ADD 180.167.212.121 MASK 255.255.255.255 %REMOTE_GATE%
+
+
+HOST_PATH = 'c:\windows\system32\drivers\etc\HOSTS'
+hosts_text = ''
+def write_file(filepath, text):
+    with open(filepath, "w", encoding='utf-8') as f:
+        f.write(text)
+        f.close()
+
+def read_file(filepath):
+    f = open(filepath, "r", encoding='utf-8')
+    return f.read()
+
+def UpdateLine(ip, hostname):
+    global hosts_text
+    if hosts_text.find(hostname) > -1:
+        hosts_text = re.sub('\n[^\n]*{}[^\n]*\n'.format(hostname), '\n{} {}\n'.format(ip, hostname), hosts_text)
+    else:
+        hosts_text = '{}\n{} {}'.format(hosts_text, ip, hostname)
+
+# 192.168.21.2 dc2
+# 192.168.21.12 dc4
+# 192.168.21.156 code.aurogon.com
+# 106.3.147.232 cms.gamebar.com
+# 180.167.212.113 gjol-external-admin-xz.wangyuan.net
+def UpdateHosts():
+    global hosts_text
+    hosts_text = read_file(HOST_PATH)
+    hosts_text_old = hosts_text
+    UpdateLine('192.168.21.2', 'dc2')
+    UpdateLine('192.168.21.12', 'dc4')
+    UpdateLine('192.168.21.156', 'code.aurogon.com')
+    UpdateLine('106.3.147.232', 'cms.gamebar.com')
+    UpdateLine('180.167.212.113', 'gjol-external-admin-xz.wangyuan.net')
+    if hosts_text != hosts_text_old:
+        print('HOSTS文件已更新')
+        write_file(HOST_PATH, hosts_text)
 
 def main():
     global remote_gateway
@@ -44,8 +86,13 @@ def main():
         SetRemoteGateIP('180.167.212.113')      #协作服GM平台
         SetRemoteGateIP('140.210.69.36')        #考勤
         SetRemoteGateIP('121.5.96.181')         #角色导入
+    UpdateHosts()
     os.system('pause')
 
-
 if __name__ == "__main__":
-    main()
+    if is_admin():
+        # Code of your program here
+        main()
+    else:
+        # Re-run the program with admin rights
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
