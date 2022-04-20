@@ -80,7 +80,14 @@ def main():
     # network_gateway = get_network_gateway()
     local_now_gateway = get_sys_route('0.0.0.0')
     if not local_now_gateway:
-        reset_network()
+        json_info = load_json(json_file_path)
+        local_gateway = json_info['local_gateway']
+        if local_gateway:
+            os.system('route DELETE 0.0.0.0')
+            os.system('route ADD 0.0.0.0 MASK 0.0.0.0 ' + local_gateway)
+            print('已切换到分流模式，当前默认网关为', get_sys_route('0.0.0.0'))
+        else:
+            reset_network()
     else:
         remote_gateway = get_sys_route('192.168.21.0')
         if not remote_gateway:
@@ -94,7 +101,8 @@ def main():
                 else:
                     os.system('route DELETE 0.0.0.0')
                     os.system('route ADD 0.0.0.0 MASK 0.0.0.0 ' + local_gateway)
-                    print('已切换到本地远程分流模式，当前默认网关为', get_sys_route('0.0.0.0'))
+                    print('已切换到分流模式，当前默认网关为', get_sys_route('0.0.0.0'))
+                    print('再次执行可切换到全局模式')
             # elif local_now_gateway == network_gateway:
             elif local_now_gateway != remote_gateway:
                 # 记录本地网关地址
@@ -104,6 +112,8 @@ def main():
                 os.system('route DELETE 0.0.0.0')
                 os.system('route ADD 0.0.0.0 MASK 0.0.0.0 ' + remote_gateway)
                 print('已切换到全局模式，当前默认网关为', get_sys_route('0.0.0.0'))
+                print('再次执行可切换到分流模式')
+                print('全局模式下直接断开OpenVPN会导致断网，再次执行本程序即可恢复连接')
     os.system('pause')
 
 
