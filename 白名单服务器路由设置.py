@@ -1,5 +1,7 @@
 import os, re
 import ctypes, sys
+import requests
+
 
 remote_gateway = ''
 
@@ -64,14 +66,47 @@ def UpdateHosts():
     global hosts_text
     hosts_text = read_file(HOST_PATH)
     hosts_text_old = hosts_text
-    UpdateLine('192.168.21.2', 'dc2')
-    UpdateLine('192.168.21.12', 'dc4')
     UpdateLine('192.168.21.156', 'code.aurogon.com')
-    UpdateLine('106.3.147.232', 'cms.gamebar.com')
-    UpdateLine('180.167.212.113', 'gjol-external-admin-xz.wangyuan.net')
+    # UpdateLine('192.168.21.2', 'dc2')
+    # UpdateLine('192.168.21.12', 'dc4')
+    # UpdateLine('106.3.147.232', 'cms.gamebar.com')
+    # UpdateLine('180.167.212.113', 'gjol-external-admin-xz.wangyuan.net')
     if hosts_text != hosts_text_old:
         print('HOSTS文件已更新')
         write_file(HOST_PATH, hosts_text)
+
+def UpdateRoute():
+    SetRemoteGateIP('103.255.202.185')      #日志服务器
+    SetRemoteGateIP('103.255.202.216')      #ELK平台
+    SetRemoteGateIP('121.5.97.164')         #网元服GM平台
+    SetRemoteGateIP('210.242.203.135')      #台服GM平台
+    SetRemoteGateIP('180.167.212.113')      #协作服GM平台
+    SetRemoteGateIP('140.210.69.36')        #考勤
+    SetRemoteGateIP('121.5.96.181')         #角色导入
+
+def UpdateExtraInfo():
+    response = requests.get('http://code.aurogon.com/pub/designer_tools/-/raw/master/OpenVPNTools/ExtraHosts.txt')
+    if response.ok:
+        global hosts_text
+        hosts_text = read_file(HOST_PATH)
+        hosts_text_old = hosts_text
+        extra_hosts = response.text.split('\n')
+        for line in extra_hosts:
+            ip, hostname = line.split(' ')
+            # print(ip, hostname)
+            UpdateLine(ip, hostname)
+        if hosts_text != hosts_text_old:
+            write_file(HOST_PATH, hosts_text)
+            print('额外HOSTS文件已更新')
+
+    response = requests.get('http://code.aurogon.com/pub/designer_tools/-/raw/master/OpenVPNTools/ExtraRouteIP.txt')
+    if response.ok:
+        extra_route_ip = response.text.splitlines()
+        for line in extra_route_ip:
+            ip, desc = line.split(' ')
+            SetRemoteGateIP(ip)
+
+
 
 def main():
     global remote_gateway
@@ -79,15 +114,11 @@ def main():
     if not remote_gateway:
         print('获取远程网关失败，请确认已连接OpenVPN')
     else:
-        SetRemoteGateIP('103.255.202.185')      #日志服务器
-        SetRemoteGateIP('103.255.202.216')      #ELK平台
-        SetRemoteGateIP('121.5.97.164')         #网元服GM平台
-        SetRemoteGateIP('210.242.203.135')      #台服GM平台
-        SetRemoteGateIP('180.167.212.113')      #协作服GM平台
-        SetRemoteGateIP('140.210.69.36')        #考勤
-        SetRemoteGateIP('121.5.96.181')         #角色导入
+        UpdateRoute()
     UpdateHosts()
-    os.system('pause')
+    UpdateExtraInfo()
+
+    # os.system('pause')
 
 if __name__ == "__main__":
     if is_admin():
